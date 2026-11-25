@@ -45,6 +45,14 @@ Shizuku（ADB shell 权限，uid 2000）
 
 ---
 
+## 下载 / Download
+
+最新正式版：**[Releases](https://github.com/mingxiozsg-star/zhiwei-limiter/releases/latest)**
+
+Latest release: **[Releases](https://github.com/mingxiozsg-star/zhiwei-limiter/releases/latest)**
+
+---
+
 ## 使用 / Usage
 
 1. 安装 [Shizuku](https://github.com/RikkaApps/Shizuku)，用无线调试或 root 方式启动它
