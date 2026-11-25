@@ -6,13 +6,31 @@ import rikka.shizuku.Shizuku
 /**
  * Shizuku 提权执行器。
  *
- * 通过 Shizuku.newProcess 起独立的 shell 进程执行命令，拿到的权限等级与
+ * 通过 Shizuku 起独立的 shell 进程执行命令，拿到的权限等级与
  * `adb shell` 相同（uid 2000）。这样无需 root 也能：
  *  - 读取当前前台应用（dumpsys activity）
  *  - 强制停止指定应用（am force-stop）
  *  - 处理 appops / deviceidle 白名单
+ *
+ * 注意：Shizuku.newProcess 标注了 @RestrictTo(LIBRARY_GROUP)，
+ * 编译期被 Kotlin 视为 private，只能用反射调用。
  */
 object ShellExecutor {
+
+    private val newProcessMethod by lazy {
+        try {
+            Shizuku::class.java
+                .getDeclaredMethod(
+                    "newProcess",
+                    Array<String>::class.java,
+                    Array<String>::class.java,
+                    String::class.java
+                )
+                .apply { isAccessible = true }
+        } catch (t: Throwable) {
+            null
+        }
+    }
 
     /** Shizuku 是否已安装并在运行 */
     fun isBinderAvailable(): Boolean = try {
@@ -38,14 +56,25 @@ object ShellExecutor {
         }
     }
 
+    private fun startProcess(command: String): Process? = try {
+        newProcessMethod?.invoke(
+            null,
+            arrayOf("sh", "-c", command),
+            null,
+            null
+        ) as? Process
+    } catch (t: Throwable) {
+        null
+    }
+
     /**
      * 执行一条 shell 命令，返回标准输出（合并 stderr）。
      * Shizuku 不可用时返回 null，调用方需自行降级。
      */
     fun exec(command: String, timeoutMs: Long = 8000): String? {
         if (!hasPermission()) return null
+        val process = startProcess(command) ?: return null
         return try {
-            val process = Shizuku.newProcess(arrayOf("sh", "-c", command), null, null)
             val out = StringBuilder()
             val reader = Thread {
                 try {
