@@ -43,11 +43,15 @@ android {
     }
 }
 
-// Force use of ARM64 binaries for AAPT2 in Proot environment
-configurations.all {
-    resolutionStrategy.eachDependency {
-        if (requested.group == "com.android.tools.build" && requested.name == "aapt2") {
-            useTarget("com.android.tools.build:aapt2:${'$'}{requested.version}:linux-aarch64")
+// ARM64 hosts (local proot) need the aarch64 AAPT2 binary.
+// GitHub Actions runners are x86_64 and must keep the default classifier.
+val hostArch = System.getProperty("os.arch") ?: ""
+if (hostArch == "aarch64" || hostArch == "arm64") {
+    configurations.all {
+        resolutionStrategy.eachDependency {
+            if (requested.group == "com.android.tools.build" && requested.name == "aapt2") {
+                useTarget("com.android.tools.build:aapt2:${requested.version}:linux-aarch64")
+            }
         }
     }
 }
